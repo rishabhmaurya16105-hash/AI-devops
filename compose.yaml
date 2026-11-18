@@ -1,0 +1,68 @@
+name: devopsmart-db
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in database/.env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in database/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in database/.env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    mem_limit: 512m
+    shm_size: 64mb
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DEVOPSMART_APP_NAME: ${DEVOPSMART_APP_NAME:-DevOpsMart API}
+      DEVOPSMART_ENVIRONMENT: ${DEVOPSMART_ENVIRONMENT:-development}
+      DEVOPSMART_DEBUG: ${DEVOPSMART_DEBUG:-false}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in database/.env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in database/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in database/.env}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health/db', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

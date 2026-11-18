@@ -1,0 +1,74 @@
+# Environment files may contain secrets; keep the example template trackable.
+.env
+.env.*
+!.env.example
+!**/.env.example
+.envrc
+*.local.env
+*.local.env.*
+
+# JavaScript dependencies, build output, and test coverage.
+node_modules/
+dist/
+coverage/
+test-results/
+
+# Python virtual environments, bytecode, caches, and package artifacts.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.tox/
+.nox/
+*.egg-info/
+
+# Test and coverage output.
+.coverage
+.coverage.*
+htmlcov/
+
+# IDE and operating-system local files.
+.vscode/
+.vscode-test/
+.idea/
+.history/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local logs and database data/artifacts.
+logs/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+database/data/
+database/postgres-data/
+*.dump
+*.backup
+
+# Terraform working data and sensitive local inputs. Keep the lock file.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Package-manager and build-tool logs.
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
