@@ -28,16 +28,18 @@ The project demonstrates the complete application lifecycle, from development an
 - **Version Control:** Git, GitHub
 
 ## Application Development
-![Homepage](screenshots/homepage.png)
-![Add to Cart Bag](screenshots/addtocart.png)
-![ThankouPage](screenshots/thankyoupage.png)
-![Datbase](screenshots/database.png)
 
 Developed a three-tier e-commerce application using React, FastAPI, and PostgreSQL. Implemented product listing, shopping cart, order management, database models, and migrations. Added health check endpoints, structured JSON logging, request ID middleware, and automated frontend and backend tests.
+![Homepage](screenshots/homepage.png)
+
+![Add to Cart Bag](screenshots/addtocart.png)
+
+![ThankouPage](screenshots/thankyoupage.png)
+
+![Datbase](screenshots/database.png)
 
 ## Dockererization
 
-![DevOpsMart Docker Running containers](screenshots/dockercontainers.png)
 The application is containerized using Docker and Docker Compose. All three services run locally in separate containers and communicate through a dedicated Docker network.
 
 1-Multi-stage frontend Dockerfile.
@@ -53,16 +55,16 @@ The application is containerized using Docker and Docker Compose. All three serv
 11-Container-to-container communication verification.
 12-Application image and secret audit.
 
-## Docker compose
+![DevOpsMart Docker Running containers](screenshots/dockercontainers.png)
 
-![Docker compose](screenshots/dockercompose.png)
+## Docker compose
 
 Inside Docker Compose, services communicate using their service names:
 Frontend → backend:8000
 Backend → postgres:5432
 The browser accesses the application through http://localhost:8080.
 
-
+![Docker compose](screenshots/dockercompose.png)
 
 ## How to run the application
 
