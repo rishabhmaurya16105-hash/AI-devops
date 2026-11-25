@@ -2,7 +2,9 @@ from alembic import context
 
 from app.db.base import Base
 from app.db.session import engine
-from app.models import Product
+
+# Register the model with Base.metadata for Alembic autogeneration.
+from app.models import Product  # noqa: F401
 
 config = context.config
 target_metadata = Base.metadata

@@ -2,9 +2,9 @@ import json
 import logging
 import re
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import pytest
 
 from app.core.logging import JsonLogFormatter, request_id_context
 from app.core.middleware import RequestLoggingMiddleware

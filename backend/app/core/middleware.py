@@ -60,7 +60,7 @@ class RequestLoggingMiddleware:
 
         try:
             await self.app(scope, receive, send_with_request_id)
-        except Exception as exc:
+        except Exception:
             duration_ms = round((time.perf_counter() - started_at) * 1000, 3)
             logger.exception(
                 "Unhandled request exception",

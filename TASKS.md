@@ -11,3 +11,12 @@
 - [x] Complete a controlled browser end-to-end order test with a temporary product; verify persistence and remove only test records without changing seeded product stock.
 - [x] Verify frontend, backend, and PostgreSQL pod self-recovery and confirm database persistence on the existing PVC.
 - [x] Install F5 NGINX Ingress Controller v5.8.1 and verify local `/` frontend and unchanged `/api` backend routing, database health, and loopback-only access; keep PostgreSQL internal.
+
+## Phase 4: CI/CD
+
+- [x] Step 2A: Configure frontend ESLint and backend Ruff linting; both lint commands pass.
+- [x] Step 2B: Add and locally validate independent GitHub Actions frontend/backend CI jobs for lint, tests, and frontend build. A hosted GitHub run remains pending.
+- [ ] Add image build and tagging steps.
+- [ ] Add security and configuration validation.
+- [ ] Design a safe deployment workflow for the local kind cluster.
+- [ ] Verify deployment and rollback behavior.

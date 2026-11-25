@@ -31,3 +31,19 @@
 - Sample product cards currently show image placeholders because the seeded products do not have image URLs.
 
 PostgreSQL and backend pods recorded transient startup probe warnings while initializing. They are currently Ready; backend and frontend have zero restarts, and the frontend had no warning events. Backend logs contained no credential-like values, and frontend logs had no errors or credential-like values.
+
+## Phase 4: CI/CD
+
+- Step 2A (frontend and backend linting setup) is complete.
+- Frontend linting uses ESLint 10.15.0 with JavaScript/JSX, React Hooks, and Vite Fast Refresh rules. `npm run lint` passes.
+- Backend linting uses Ruff 0.17.6 targeting Python 3.14. From `backend`, `.\.venv\Scripts\python.exe -m ruff check .` passes.
+- Frontend dependency lockfile was updated for the lint tools. Ruff is pinned in `backend/requirements-dev.txt`; the production `requirements.lock` remains unchanged.
+- Existing validation passed: frontend tests (8), backend tests (23), and the frontend production build. Backend tests emitted one Starlette `TestClient` deprecation warning.
+- Backend edits were limited to lint findings: import ordering, a type-check-only model import, an unused exception binding, and an intentional Alembic model-registration import suppression. No API or application behavior changes were made.
+- Step 2B (GitHub Actions CI workflow) is complete and locally validated in `.github/workflows/ci.yml`. Pull requests targeting `main` and pushes to `main` run independent frontend and backend jobs.
+- The frontend job uses Node.js 24, `npm ci` with lockfile-based npm caching, then runs `npm run lint`, `npm test`, and `npm run build`.
+- The backend job uses Python 3.14, installs pinned runtime dependencies from `requirements.lock` followed by development/test tools from `requirements-dev.txt`, then runs Ruff and pytest. The tests use in-memory SQLite and dependency overrides; no PostgreSQL service is required.
+- Workflow validation passed with actionlint. Local verification passed: frontend `npm ci`, lint, 8 tests, and production build; backend dependency-install dry-runs, Ruff, and 23 tests. Backend pytest retains one Starlette `TestClient` deprecation warning.
+- CI has read-only `contents: read` permissions, no secrets or deployment steps, checkout credentials are not persisted, both jobs have 15-minute timeouts, and concurrency cancels superseded runs. A hosted GitHub Actions run has not been observed.
+- Existing backend development requirements leave `httpx` and `pytest` unpinned; runtime dependencies remain pinned by `requirements.lock`. Local kind deployment remains outside hosted-runner workflows.
+- The next pending Phase 4 task is image build and tagging. No Docker, Kubernetes, application, or README files were changed.

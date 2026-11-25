@@ -7,8 +7,8 @@ Create Date: 2026-11-02
 
 from typing import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision: str = "0002_orders"
 down_revision: str | None = "0001_products"
