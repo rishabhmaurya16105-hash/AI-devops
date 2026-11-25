@@ -10,3 +10,4 @@
 - [x] Deploy the frontend to Kubernetes and verify the storefront and proxied product API.
 - [x] Complete a controlled browser end-to-end order test with a temporary product; verify persistence and remove only test records without changing seeded product stock.
 - [x] Verify frontend, backend, and PostgreSQL pod self-recovery and confirm database persistence on the existing PVC.
+- [x] Install F5 NGINX Ingress Controller v5.8.1 and verify local `/` frontend and unchanged `/api` backend routing, database health, and loopback-only access; keep PostgreSQL internal.

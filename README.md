@@ -2,7 +2,7 @@ DEVOPSMART
 
 Production-Grade Three-Tier Application with End-to-End DevOps, DevSecOps & AI-Powered Self-Healing Infrastructure.
 
-## PROJECT-OVERVIEW
+## Project Overview
 **DevOpsMart** is a production-grade, three-tier e-commerce application built to demonstrate end-to-end DevOps and DevSecOps practices. It uses React.js for the frontend, FastAPI for the backend, and PostgreSQL for data storage.
 
 The application is containerized using Docker and deployed on Kubernetes, with CI/CD pipelines automated through GitHub Actions. DevSecOps tools are integrated for security scanning, while Prometheus and Grafana provide infrastructure monitoring and observability.
@@ -34,11 +34,11 @@ Developed a three-tier e-commerce application using React, FastAPI, and PostgreS
 
 ![Add to Cart Bag](screenshots/addtocart.png)
 
-![ThankouPage](screenshots/thankyoupage.png)
+![Thank you Page](screenshots/thankyoupage.png)
 
 ![Datbase](screenshots/database.png)
 
-## Dockererization
+## Dockerization
 
 The application is containerized using Docker and Docker Compose. All three services run locally in separate containers and communicate through a dedicated Docker network.
 
@@ -186,6 +186,67 @@ After recovery, I checked the database again. All six products and their origina
 
 The recovery tests confirmed that Kubernetes could recreate the application pods and that PostgreSQL data persisted across pod recreation.
 
+### 9. Local Kubernetes Ingress
+
+## Kubernetes Ingress & Routing
+
+As the application started running on Kubernetes, I wanted to access the frontend and backend through a single entry point instead of exposing each service separately.
+
+For this, I configured **F5 NGINX Ingress Controller (v5.8.1)** in my existing kind cluster. It handles incoming HTTP requests and forwards them to the appropriate Kubernetes Service based on the request path.
+
+### How Routing Works
+
+I configured path-based routing for the application:
+
+| Path | Destination | Service Port |
+|---|---|---|
+| `/` | Frontend | 8080 |
+| `/api` | Backend | 8000 |
+
+The frontend handles requests coming to the root path, while requests starting with `/api` are forwarded to the FastAPI backend.
+
+The existing ClusterIP Services are used for internal communication. PostgreSQL remains inside the cluster and is not exposed through Ingress.
+
+### Implementation
+
+- Installed F5 NGINX Ingress Controller v5.8.1.
+- Created an Ingress resource for frontend and backend routing.
+- Configured path-based routing without unnecessary URL rewrites.
+- Used the existing frontend and backend ClusterIP Services.
+- Kept PostgreSQL accessible only within the Kubernetes cluster.
+- Used localhost port-forwarding to access the Ingress Controller from my Windows machine.
+
+### Testing and Verification
+
+After configuring Ingress, I tested the application through the Ingress entry point.
+
+- The frontend returned **HTTP 200 OK**.
+- The backend Products API (`/api/v1/products`) returned **HTTP 200 OK** with six products.
+- Backend health and database health endpoints reported healthy.
+- Frontend, backend and PostgreSQL Pods remained Ready.
+- The PostgreSQL PersistentVolumeClaim remained Bound.
+
+I also verified that the existing application Services continued working and that PostgreSQL was not exposed externally.
+
+### Screenshots
+
+**1. NGINX Ingress Controller Running**
+
+![NGINX Ingress Controller](screenshots/kubernetes/ingress-controller.png)
+
+**2. Kubernetes Ingress Resource and Routing Rules**
+
+![Kubernetes Ingress Resource](screenshots/kubernetes/ingress-resource.png)
+
+**3. DevOpsMart Frontend Through Ingress**
+
+![DevOpsMart Frontend Through Ingress](screenshots/kubernetes/kubernetes/ingress-frontend.png)
+
+**4. Backend Products API Through Ingress**
+
+![Backend Products API Through Ingress](screenshots/kubernetes/kubernetes/ingress-backend-api.png)
+
+
 ### Kubernetes Deployment Summary
 
 - Local Kubernetes cluster created using kind.
@@ -195,6 +256,7 @@ The recovery tests confirmed that Kubernetes could recreate the application pods
 - Frontend-to-backend communication verified through Nginx.
 - End-to-end order creation and database verification completed.
 - Pod recovery and PostgreSQL data persistence tested successfully.
+- F5 NGINX Ingress routing verified for the frontend and backend API; PostgreSQL remains private.
 
 The entire setup runs locally using Docker Desktop and kind, without requiring cloud infrastructure.
 

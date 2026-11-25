@@ -15,7 +15,11 @@
 - Frontend Deployment and ClusterIP Service use image `devopsmart-db-frontend:k8s` on port 8080.
 - Frontend readiness and liveness probes use `/healthz`; rollout completed with one Ready pod and a ready Service endpoint on port 8080.
 - Frontend `/` and `/healthz` returned HTTP 200; `/api/v1/products` through the Nginx proxy returned all six seeded products.
-- Local access was verified at `http://127.0.0.1:8080` using a temporary port-forward, which has been stopped. The ClusterIP Service has no Ingress or NodePort.
+- Local access to the frontend was verified using temporary loopback-only port-forwarding; the forward was stopped after testing. The application Services remain ClusterIP.
+- F5 NGINX Ingress Controller v5.8.1 is installed in `nginx-ingress`; its Deployment is 1/1 Ready and its Service has a ready endpoint.
+- Ingress `devopsmart` uses class `nginx` and host `devopsmart.local`. `/api` routes to `backend:8000` without a rewrite, and `/` routes to `frontend:8080`. PostgreSQL has no Ingress route and remains an internal ClusterIP Service.
+- Through the loopback-only Ingress port-forward on `127.0.0.1:8080`, `/` returned HTTP 200 and `/api/v1/products` returned HTTP 200 with all six products. Backend `/health` and `/health/db` both returned healthy over a separate loopback-only backend port-forward. Both forwards were stopped after verification.
+- No NodePort, Windows hosts-file change, or TLS configuration was used; local hostname routing was verified with the `devopsmart.local` Host header.
 - Browser-based end-to-end testing used temporary product ID `7` (`e2e-temporary-test-product`), inserted temporarily with approval because the application has no supported product-creation API or UI. The cart showed quantity 1 and total `$1.00`; one order succeeded with database ID `1` and order number `ORD-5E4E16C989B3440EAD3E7031DC80EC62`. Its single item referenced product `7`, quantity 1, unit price/subtotal `$1.00`; the temporary product stock changed from 1 to 0.
 - Cleanup removed only the inspected test order item, order, and temporary product by exact IDs. Final database counts are 6 products, 0 orders, and 0 order items; all six seeded product stock quantities match the recorded baseline.
 - After cleanup, frontend `/` and `/healthz` returned HTTP 200, and the frontend Nginx proxy returned HTTP 200 with all six products. Backend `/health` and `/health/db` are healthy, and PostgreSQL accepts connections.
