@@ -25,12 +25,12 @@ jobs:
         working-directory: frontend
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 24
           cache: npm
@@ -38,6 +38,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Audit npm dependencies
+        run: npm audit --audit-level=low
 
       - name: Lint
         run: npm run lint
@@ -66,6 +69,17 @@ jobs:
           docker run --rm --network none --entrypoint sh "$image" -ec \
             'test -s /usr/share/nginx/html/index.html && test -s /etc/nginx/conf.d/default.conf'
 
+      - name: Scan frontend image vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          version: v0.76.2
+          image-ref: devopsmart-db-frontend:sha-${{ github.sha }}
+          format: table
+          vuln-type: os,library
+          severity: CRITICAL,HIGH,MEDIUM,LOW
+          ignore-unfixed: "false"
+          exit-code: "1"
+
   backend:
     name: Backend
     runs-on: ubuntu-latest
@@ -75,12 +89,12 @@ jobs:
         working-directory: backend
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: "3.14"
 
@@ -89,6 +103,13 @@ jobs:
 
       - name: Install development dependencies
         run: python -m pip install -r requirements-dev.txt
+
+      - name: Audit installed backend dependencies
+        run: |
+          python -m venv "$RUNNER_TEMP/pip-audit-venv"
+          "$RUNNER_TEMP/pip-audit-venv/bin/python" -m pip install --disable-pip-version-check "pip-audit==2.10.1"
+          site_packages="$(python -c 'import site; print(site.getsitepackages()[0])')"
+          "$RUNNER_TEMP/pip-audit-venv/bin/pip-audit" --path "$site_packages" --progress-spinner off
 
       - name: Lint
         run: python -m ruff check .
@@ -112,3 +133,83 @@ jobs:
           test "$(docker image inspect --format '{{json .Config.ExposedPorts}}' "$image")" = '{"8000/tcp":{}}'
           docker run --rm --network none --entrypoint python "$image" -c \
             'from pathlib import Path; import app.main; assert Path("app/main.py").is_file() and Path("migrations/env.py").is_file()'
+
+      - name: Scan backend image vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          version: v0.76.2
+          image-ref: devopsmart-db-backend:sha-${{ github.sha }}
+          format: table
+          vuln-type: os,library
+          severity: CRITICAL,HIGH,MEDIUM,LOW
+          ignore-unfixed: "false"
+          exit-code: "1"
+
+  security-config:
+    name: Security and configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out full repository history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pinned security and Kubernetes tools
+        env:
+          GOBIN: ${{ runner.temp }}/devopsmart-tools
+        run: |
+          mkdir -p "$GOBIN"
+          echo "$GOBIN" >> "$GITHUB_PATH"
+          go install github.com/gitleaks/gitleaks/v8@v8.30.1
+          go install github.com/yannh/kubeconform/cmd/kubeconform@v0.8.0
+          go install golang.stackrox.io/kube-linter/cmd/kube-linter@v0.8.3
+
+      - name: Scan repository history for secrets
+        run: gitleaks git --log-opts="--all" --redact=100 --exit-code 1 --no-banner
+
+      - name: Validate Dockerfiles
+        run: |
+          docker run --rm --volume "$GITHUB_WORKSPACE:/repo:ro" \
+            --entrypoint hadolint \
+            hadolint/hadolint@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d \
+            /repo/backend/Dockerfile /repo/frontend/Dockerfile /repo/frontend/Dockerfile.k8s
+
+      - name: Validate Docker Compose configuration
+        env:
+          POSTGRES_DB: devopsmart_ci
+          POSTGRES_USER: devopsmart_ci
+          POSTGRES_PASSWORD: ci-placeholder-not-a-credential
+        run: |
+          docker compose -f compose.yaml config --quiet
+          docker compose -f database/compose.yaml config --quiet
+
+      - name: Validate Kubernetes schemas
+        run: kubeconform -strict -summary -kubernetes-version 1.35.8 kubernetes
+
+      - name: Validate Kubernetes cross-resource references
+        run: |
+          combined="$RUNNER_TEMP/kubernetes-all.yaml"
+          : > "$combined"
+          while IFS= read -r -d '' manifest; do
+            cat "$manifest" >> "$combined"
+            printf '\n---\n' >> "$combined"
+          done < <(find kubernetes -type f \( -name '*.yaml' -o -name '*.yml' \) -print0 | sort -z)
+          cat >> "$combined" <<'EOF'
+          ---
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: postgres-secret
+            namespace: devopsmart
+          type: Opaque
+          data:
+            POSTGRES_PASSWORD: ""
+          EOF
+          kube-linter lint "$combined" \
+            --do-not-auto-add-defaults \
+            --include dangling-service \
+            --include dangling-ingress \
+            --include env-value-from \
+            --include mismatching-selector
