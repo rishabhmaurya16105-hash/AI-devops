@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- Build stage: install exact lockfile dependencies and build static assets ----
-FROM node:24-alpine AS build
+FROM node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5 AS build
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ COPY src ./src
 RUN npm run build
 
 # ---- Production stage: serve static files with non-root Nginx ----
-FROM nginxinc/nginx-unprivileged:1.29-alpine AS production
+FROM nginxinc/nginx-unprivileged:1.29-alpine@sha256:0c79d56aee561a1d81c63f00eee5fb5fe29279560cdc55e91425133104c7fbe6 AS production
 
 LABEL org.opencontainers.image.title="devopsmart-frontend" \
       org.opencontainers.image.description="DevOpsMart React storefront served by Nginx" \

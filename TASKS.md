@@ -15,8 +15,8 @@
 ## Phase 4: CI/CD
 
 - [x] Step 2A: Configure frontend ESLint and backend Ruff linting; both lint commands pass.
-- [x] Step 2B: Add and locally validate independent GitHub Actions frontend/backend CI jobs for lint, tests, and frontend build. A hosted GitHub run remains pending.
-- [ ] Add image build and tagging steps.
+- [x] Step 2B: Add and validate independent GitHub Actions frontend/backend CI jobs for lint, tests, and frontend build. The owner verified both GitHub jobs are green.
+- [x] Step 3: Build and verify frontend/backend Docker images in CI using full Git SHA tags, digest-pinned base images, and no registry publishing. Local image builds and smoke checks passed.
 - [ ] Add security and configuration validation.
 - [ ] Design a safe deployment workflow for the local kind cluster.
 - [ ] Verify deployment and rollback behavior.

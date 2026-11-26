@@ -19,7 +19,7 @@ jobs:
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: frontend
@@ -48,10 +48,28 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build and verify frontend image without publishing
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          set -euo pipefail
+          image="devopsmart-db-frontend:${IMAGE_TAG}"
+          if docker image inspect "$image" >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing image tag: $image" >&2
+            exit 1
+          fi
+          docker buildx build --pull --platform linux/amd64 --load \
+            --tag "$image" --file Dockerfile.k8s .
+          test "$(docker image inspect --format '{{.Config.User}}' "$image")" = "101"
+          test "$(docker image inspect --format '{{json .Config.ExposedPorts}}' "$image")" = '{"8080/tcp":{}}'
+          docker run --rm --network none --entrypoint nginx "$image" -t
+          docker run --rm --network none --entrypoint sh "$image" -ec \
+            'test -s /usr/share/nginx/html/index.html && test -s /etc/nginx/conf.d/default.conf'
+
   backend:
     name: Backend
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: backend
@@ -77,3 +95,20 @@ jobs:
 
       - name: Test
         run: python -m pytest -q
+
+      - name: Build and verify backend image without publishing
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          set -euo pipefail
+          image="devopsmart-db-backend:${IMAGE_TAG}"
+          if docker image inspect "$image" >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing image tag: $image" >&2
+            exit 1
+          fi
+          docker buildx build --pull --platform linux/amd64 --load \
+            --tag "$image" --file Dockerfile .
+          test "$(docker image inspect --format '{{.Config.User}}' "$image")" = "10001:10001"
+          test "$(docker image inspect --format '{{json .Config.ExposedPorts}}' "$image")" = '{"8000/tcp":{}}'
+          docker run --rm --network none --entrypoint python "$image" -c \
+            'from pathlib import Path; import app.main; assert Path("app/main.py").is_file() and Path("migrations/env.py").is_file()'
